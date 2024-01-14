@@ -11,6 +11,7 @@ router.register(r'emprunts', EmpruntViewSet)
 
 urlpatterns=[
   
-    path('getall/', include(router.urls))
+    path('', include(router.urls)),
+    path('getretard/',views.retrieve_retard )
 
 ]

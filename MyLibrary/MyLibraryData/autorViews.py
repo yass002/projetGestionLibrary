@@ -5,5 +5,6 @@ urlpatterns=[
     path('add/', views.ajouterAuteur),
     path('affauteur/', views.affauteur),
     path('getauteurByid/<int:id>',views.getauteurByid),
-    path('getnameAuteur/<int:id>',views.getNameAuteur)
+    path('getnameAuteur/<int:id>',views.getNameAuteur),
+    path('deleteauteurbyid/<int:id>',views.deleteAuteur)
 ]

@@ -1,4 +1,7 @@
+import datetime
 from django.db import models
+from datetime import timedelta,date
+from django.utils import timezone
 
 # Create your models here.
 class Adherent(models.Model):
@@ -14,8 +17,7 @@ class Adherent(models.Model):
 class Auteur(models.Model):
     nomAuteur = models.CharField(max_length=30)
     prenomAuteur = models.CharField(max_length=30)
-    def __str__(self):
-        return self.nomAuteur
+
 class Livre(models.Model):
     titreLivre = models.CharField(max_length=30)
     nbrePageLivre = models.IntegerField()
@@ -25,16 +27,24 @@ class Livre(models.Model):
     imageSrc = models.ImageField(upload_to='images/', null=True)
     nbExemplaire = models.IntegerField(null=True)
 
-
+    
 
 class Emprunt(models.Model):
     adherent = models.ForeignKey(Adherent, on_delete=models.CASCADE)
     livre = models.ForeignKey(Livre, on_delete=models.CASCADE)    
-    date_emprunt = models.DateField()
-    date_retour_prevu = models.DateField()
+    date_emprunt = models.DateField(default=datetime.date.today)
+    date_retour_prevu = models.DateField(null=True)
     date_retour_effectif = models.DateField(null=True, blank=True)
     est_en_retard = models.BooleanField(default=False)
+    def save(self, *args, **kwargs):
+        # Check if date_effectif is not set already
+     
+        if not self.date_retour_prevu:
+            now = date.today()
+            # Set date_effectif to current date plus 15 days
+            self.date_retour_prevu = now + timedelta(days=15)
 
+        super().save(*args, **kwargs)
 
 class Statistiques(models.Model):
     totalLivres= models.IntegerField()

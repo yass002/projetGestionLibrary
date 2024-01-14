@@ -20,12 +20,25 @@ class AutorSerialize(serializers.ModelSerializer):
    
      
 class LivreSerialize(serializers.ModelSerializer):
-    codeAuteur=AutorSerialize(many=False)
+    codeAuteur=serializers.PrimaryKeyRelatedField(queryset=Auteur.objects.all())
+    nbrEmpruntLivre=serializers.SerializerMethodField()
     class Meta:
         model= Livre
         fields = ["id", "titreLivre", "nbrePageLivre", "codeAuteur","nbrEmpruntLivre","adhEmprunteur","imageSrc","nbExemplaire"]
  
-      
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['codeAuteur'] = AutorSerialize(instance.codeAuteur).data
+        return representation
+
+    def get_nbrEmpruntLivre(self, obj):
+        return obj.nbrEmpruntLivre 
+    
+
+
+
+
+
 class EmpruntSerialize(serializers.ModelSerializer):
     adherent = serializers.PrimaryKeyRelatedField(queryset=Adherent.objects.all())
     livre = serializers.PrimaryKeyRelatedField(queryset=Livre.objects.all())

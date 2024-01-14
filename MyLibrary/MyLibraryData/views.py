@@ -4,6 +4,11 @@ from .serializers import AdherentSerialize,LivreSerialize,AutorSerialize,Emprunt
 from rest_framework import status
 from .models import Adherent, Livre , Auteur , Emprunt
 from rest_framework import viewsets
+import datetime
+from datetime import date
+from django.db import transaction
+from django.db.models import F
+
 
 #Ajout des adherents
 @api_view(['POST'])
@@ -72,7 +77,7 @@ def ajouterLivre(request):
 @api_view(['GET'])
 def afflivre(request):
       try:
-            livres = Livre.objects.all()
+            livres = Livre.objects.order_by('titreLivre').all()
             serializer = LivreSerialize(livres, many=True)
             return Response(serializer.data)
       except Exception as e:
@@ -111,7 +116,7 @@ def ajouterAuteur(request):
             serializer=AutorSerialize(data=request.data)
             if serializer.is_valid():
                   serializer.save()
-                  return Response(serializer,status=status.HTTP_201_CREATED)
+                  return Response(serializer.data,status=status.HTTP_201_CREATED)
             return Response(serializer.errors)
       except Exception as e:
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST) 
@@ -119,7 +124,7 @@ def ajouterAuteur(request):
 @api_view(['GET'])
 def affauteur(request):
       try:
-            auteurs=Auteur.objects.all()
+            auteurs=Auteur.objects.order_by('nomAuteur').all()
             serializer=AutorSerialize(auteurs,many=True)
             return Response(serializer.data)
       except Exception as e:
@@ -141,9 +146,19 @@ def getauteurByid(request,id):
             return Response(serializer.data)
       except Exception as e:
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST)      
+@api_view(['DELETE'])
+def deleteAuteur(request,id):
+      try:
+            auteur=Auteur.objects.get(id=id)
+            auteur.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+      except Exception as e:
+            return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
 @api_view(['POST'])
 def ajouterEmprunt(request):
       try:
+            livreId=request.data['livre']
+            print(livreId)
             serializer = EmpruntSerialize(data=request.data)
             if serializer.is_valid():
                   serializer.save()
@@ -182,10 +197,26 @@ def updateEmprunt(request,id):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
       except Exception as e:
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST)      
-      
-
- 
-
+@api_view(['PATCH'])
+def reTourLivre(request,id):
+      try:
+            emprunt = Emprunt.objects.get(id=id)
+                   
+            today=date.today()
+            emprunt.date_retour_effectif=today
+            serializer = EmpruntSerialize(instance=emprunt, data=request.data , partial=True)
+            if serializer.is_valid():
+                  serializer.save()
+                  return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+      except Exception as e:
+            return Response(str(e), status=status.HTTP_400_BAD_REQUEST)        
+@api_view(['GET'])
+def retrieve_retard(self):
+        today = date.today()
+        emprunts = Emprunt.objects.filter(date_retour_prevu__lt=today)
+        serializer=EmpruntSerialize(instance=emprunts,many=True)
+        return Response(serializer.data)
 
     # views.py
 from rest_framework.response import Response
@@ -196,10 +227,4 @@ class EmpruntViewSet(viewsets.ModelViewSet):
     queryset = Emprunt.objects.all()
     serializer_class = EmpruntSerialize
 
-    def create(self, request, *args, **kwargs):
-        print(request.data)  # Print the request data
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+   
